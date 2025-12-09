@@ -352,16 +352,6 @@ export function ContextView() {
         </div>
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={loadContextFiles}
-            disabled={isLoading}
-            data-testid="reload-context"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Reload
-          </Button>
-          <Button
             size="sm"
             onClick={() => setIsAddDialogOpen(true)}
             data-testid="add-context-file"
