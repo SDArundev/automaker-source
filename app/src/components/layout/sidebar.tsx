@@ -393,7 +393,8 @@ export function Sidebar() {
 
     if (!result.canceled && result.filePaths[0]) {
       const path = result.filePaths[0];
-      const name = path.split("/").pop() || "Untitled Project";
+      // Extract folder name from path (works on both Windows and Mac/Linux)
+      const name = path.split(/[/\\]/).filter(Boolean).pop() || "Untitled Project";
 
       try {
         // Check if this is a brand new project (no .automaker directory)
@@ -1271,7 +1272,7 @@ export function Sidebar() {
                   Generate feature list
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  Automatically populate feature_list.json with all features
+                  Automatically create features in the features folder
                   from the implementation roadmap after the spec is generated.
                 </p>
               </div>
