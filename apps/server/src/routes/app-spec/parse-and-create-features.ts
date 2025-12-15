@@ -14,23 +14,32 @@ export async function parseAndCreateFeatures(
   content: string,
   events: EventEmitter
 ): Promise<void> {
-  logger.debug("========== parseAndCreateFeatures() started ==========");
-  logger.debug("Content length:", `${content.length} chars`);
+  logger.info("========== parseAndCreateFeatures() started ==========");
+  logger.info(`Content length: ${content.length} chars`);
+  logger.info("========== CONTENT RECEIVED FOR PARSING ==========");
+  logger.info(content);
+  logger.info("========== END CONTENT ==========");
 
   try {
     // Extract JSON from response
-    logger.debug("Extracting JSON from response...");
+    logger.info("Extracting JSON from response...");
+    logger.info(`Looking for pattern: /{[\\s\\S]*"features"[\\s\\S]*}/`);
     const jsonMatch = content.match(/\{[\s\S]*"features"[\s\S]*\}/);
     if (!jsonMatch) {
       logger.error("❌ No valid JSON found in response");
-      logger.error("Content preview:", content.substring(0, 500));
+      logger.error("Full content received:");
+      logger.error(content);
       throw new Error("No valid JSON found in response");
     }
 
-    logger.debug(`JSON match found (${jsonMatch[0].length} chars)`);
+    logger.info(`JSON match found (${jsonMatch[0].length} chars)`);
+    logger.info("========== MATCHED JSON ==========");
+    logger.info(jsonMatch[0]);
+    logger.info("========== END MATCHED JSON ==========");
 
     const parsed = JSON.parse(jsonMatch[0]);
     logger.info(`Parsed ${parsed.features?.length || 0} features`);
+    logger.info("Parsed features:", JSON.stringify(parsed.features, null, 2));
 
     const featuresDir = path.join(projectPath, ".automaker", "features");
     await fs.mkdir(featuresDir, { recursive: true });

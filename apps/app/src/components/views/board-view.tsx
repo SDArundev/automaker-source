@@ -275,7 +275,7 @@ export function BoardView() {
     };
   }, []);
 
-  // Subscribe to spec regeneration events to clear state on completion
+  // Subscribe to spec regeneration events to clear creating state on completion
   useEffect(() => {
     const api = getElectronAPI();
     if (!api.specRegeneration) return;
@@ -494,6 +494,30 @@ export function BoardView() {
       isSwitchingProjectRef.current = false;
     }
   }, [currentProject, setFeatures]);
+
+  // Subscribe to spec regeneration complete events to refresh kanban board
+  useEffect(() => {
+    const api = getElectronAPI();
+    if (!api.specRegeneration) return;
+
+    const unsubscribe = api.specRegeneration.onEvent((event) => {
+      // Refresh the kanban board when spec regeneration completes for the current project
+      if (
+        event.type === "spec_regeneration_complete" &&
+        currentProject &&
+        event.projectPath === currentProject.path
+      ) {
+        console.log(
+          "[BoardView] Spec regeneration complete, refreshing features"
+        );
+        loadFeatures();
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [currentProject, loadFeatures]);
 
   // Load persisted categories from file
   const loadCategories = useCallback(async () => {

@@ -2,9 +2,10 @@
  * Business logic for generating suggestions
  */
 
-import { query, type Options } from "@anthropic-ai/claude-agent-sdk";
+import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { EventEmitter } from "../../lib/events.js";
 import { createLogger } from "../../lib/logger.js";
+import { createSuggestionsOptions } from "../../lib/sdk-options.js";
 
 const logger = createLogger("Suggestions");
 
@@ -54,14 +55,10 @@ Format your response as JSON:
     content: `Starting ${suggestionType} analysis...\n`,
   });
 
-  const options: Options = {
-    model: "claude-opus-4-5-20251101",
-    maxTurns: 5,
+  const options = createSuggestionsOptions({
     cwd: projectPath,
-    allowedTools: ["Read", "Glob", "Grep"],
-    permissionMode: "acceptEdits",
     abortController,
-  };
+  });
 
   const stream = query({ prompt, options });
   let responseText = "";

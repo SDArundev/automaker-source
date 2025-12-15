@@ -79,10 +79,10 @@ import {
 } from "@/lib/project-init";
 import { toast } from "sonner";
 import { themeOptions } from "@/config/theme-options";
-import { Checkbox } from "@/components/ui/checkbox";
 import type { SpecRegenerationEvent } from "@/types/electron";
 import { DeleteProjectDialog } from "@/components/views/settings-view/components/delete-project-dialog";
 import { NewProjectModal } from "@/components/new-project-modal";
+import { ProjectSetupDialog } from "@/components/layout/project-setup-dialog";
 import {
   DndContext,
   DragEndEvent,
@@ -470,6 +470,12 @@ export function Sidebar() {
         setSpecCreatingForProject(null);
         toast.error("Failed to create specification", {
           description: result.error,
+        });
+      } else {
+        // Show processing toast to inform user
+        toast.info("Generating app specification...", {
+          description:
+            "This may take a minute. You'll be notified when complete.",
         });
       }
       // If successful, we'll wait for the events to update the state
@@ -1904,79 +1910,17 @@ export function Sidebar() {
       </Dialog>
 
       {/* New Project Setup Dialog */}
-      <Dialog
+      <ProjectSetupDialog
         open={showSetupDialog}
-        onOpenChange={(open) => {
-          if (!open && !isCreatingSpec) {
-            handleSkipSetup();
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Set Up Your Project</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              We didn&apos;t find an app_spec.txt file. Let us help you generate
-              your app_spec.txt to help describe your project for our system.
-              We&apos;ll analyze your project&apos;s tech stack and create a
-              comprehensive specification.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Project Overview</label>
-              <p className="text-xs text-muted-foreground">
-                Describe what your project does and what features you want to
-                build. Be as detailed as you want - this will help us create a
-                better specification.
-              </p>
-              <textarea
-                className="w-full h-48 p-3 rounded-md border border-border bg-background font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                value={projectOverview}
-                onChange={(e) => setProjectOverview(e.target.value)}
-                placeholder="e.g., A project management tool that allows teams to track tasks, manage sprints, and visualize progress through kanban boards. It should support user authentication, real-time updates, and file attachments..."
-                autoFocus
-              />
-            </div>
-
-            <div className="flex items-start space-x-3 pt-2">
-              <Checkbox
-                id="sidebar-generate-features"
-                checked={generateFeatures}
-                onCheckedChange={(checked) =>
-                  setGenerateFeatures(checked === true)
-                }
-              />
-              <div className="space-y-1">
-                <label
-                  htmlFor="sidebar-generate-features"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Generate feature list
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Automatically create features in the features folder from the
-                  implementation roadmap after the spec is generated.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={handleSkipSetup}>
-              Skip for now
-            </Button>
-            <Button
-              onClick={handleCreateInitialSpec}
-              disabled={!projectOverview.trim()}
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate Spec
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setShowSetupDialog}
+        projectOverview={projectOverview}
+        onProjectOverviewChange={setProjectOverview}
+        generateFeatures={generateFeatures}
+        onGenerateFeaturesChange={setGenerateFeatures}
+        onCreateSpec={handleCreateInitialSpec}
+        onSkip={handleSkipSetup}
+        isCreatingSpec={isCreatingSpec}
+      />
 
       {/* New Project Onboarding Dialog */}
       <Dialog

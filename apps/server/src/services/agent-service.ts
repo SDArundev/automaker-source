@@ -11,7 +11,7 @@ import { ProviderFactory } from "../providers/provider-factory.js";
 import type { ExecuteOptions } from "../providers/types.js";
 import { readImageAsBase64 } from "../lib/image-handler.js";
 import { buildPromptWithImages } from "../lib/prompt-builder.js";
-import { getEffectiveModel } from "../lib/model-resolver.js";
+import { createChatOptions } from "../lib/sdk-options.js";
 import { isAbortError } from "../lib/error-handler.js";
 
 interface Message {
@@ -176,8 +176,19 @@ export class AgentService {
     await this.saveSession(sessionId, session.messages);
 
     try {
-      // Use session model, parameter model, or default
-      const effectiveModel = getEffectiveModel(model, session.model);
+      // Build SDK options using centralized configuration
+      const sdkOptions = createChatOptions({
+        cwd: workingDirectory || session.workingDirectory,
+        model: model,
+        sessionModel: session.model,
+        systemPrompt: this.getSystemPrompt(),
+        abortController: session.abortController!,
+      });
+
+      // Extract model, maxTurns, and allowedTools from SDK options
+      const effectiveModel = sdkOptions.model!;
+      const maxTurns = sdkOptions.maxTurns;
+      const allowedTools = sdkOptions.allowedTools as string[] | undefined;
 
       // Get provider for this model
       const provider = ProviderFactory.getProviderForModel(effectiveModel);
@@ -192,17 +203,8 @@ export class AgentService {
         model: effectiveModel,
         cwd: workingDirectory || session.workingDirectory,
         systemPrompt: this.getSystemPrompt(),
-        maxTurns: 20,
-        allowedTools: [
-          "Read",
-          "Write",
-          "Edit",
-          "Glob",
-          "Grep",
-          "Bash",
-          "WebSearch",
-          "WebFetch",
-        ],
+        maxTurns: maxTurns,
+        allowedTools: allowedTools,
         abortController: session.abortController!,
         conversationHistory:
           conversationHistory.length > 0 ? conversationHistory : undefined,

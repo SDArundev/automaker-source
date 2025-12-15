@@ -48,7 +48,9 @@ export function resolveModelString(
   // Look up Claude model alias
   const resolved = CLAUDE_MODEL_MAP[modelKey];
   if (resolved) {
-    console.log(`[ModelResolver] Resolved model alias: "${modelKey}" -> "${resolved}"`);
+    console.log(
+      `[ModelResolver] Resolved model alias: "${modelKey}" -> "${resolved}"`
+    );
     return resolved;
   }
 
@@ -73,8 +75,5 @@ export function getEffectiveModel(
   sessionModel?: string,
   defaultModel?: string
 ): string {
-  return resolveModelString(
-    explicitModel || sessionModel,
-    defaultModel
-  );
+  return resolveModelString(explicitModel || sessionModel, defaultModel);
 }

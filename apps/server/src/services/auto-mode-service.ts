@@ -9,16 +9,16 @@
  * - Verification and merge workflows
  */
 
-import { AbortError } from "@anthropic-ai/claude-agent-sdk";
 import { ProviderFactory } from "../providers/provider-factory.js";
 import type { ExecuteOptions } from "../providers/types.js";
 import { exec } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs/promises";
-import type { EventEmitter, EventType } from "../lib/events.js";
+import type { EventEmitter } from "../lib/events.js";
 import { buildPromptWithImages } from "../lib/prompt-builder.js";
 import { resolveModelString, DEFAULT_MODELS } from "../lib/model-resolver.js";
+import { createAutoModeOptions } from "../lib/sdk-options.js";
 import { isAbortError, classifyError } from "../lib/error-handler.js";
 
 const execAsync = promisify(exec);
@@ -1085,7 +1085,18 @@ When done, summarize what you implemented and any notes for the developer.`;
     imagePaths?: string[],
     model?: string
   ): Promise<void> {
-    const finalModel = resolveModelString(model, DEFAULT_MODELS.claude);
+    // Build SDK options using centralized configuration for feature implementation
+    const sdkOptions = createAutoModeOptions({
+      cwd: workDir,
+      model: model,
+      abortController,
+    });
+
+    // Extract model, maxTurns, and allowedTools from SDK options
+    const finalModel = sdkOptions.model!;
+    const maxTurns = sdkOptions.maxTurns;
+    const allowedTools = sdkOptions.allowedTools as string[] | undefined;
+
     console.log(
       `[AutoMode] runAgent called for feature ${featureId} with model: ${finalModel}`
     );
@@ -1108,9 +1119,9 @@ When done, summarize what you implemented and any notes for the developer.`;
     const options: ExecuteOptions = {
       prompt: promptContent,
       model: finalModel,
-      maxTurns: 50,
+      maxTurns: maxTurns,
       cwd: workDir,
-      allowedTools: ["Read", "Write", "Edit", "Glob", "Grep", "Bash"],
+      allowedTools: allowedTools,
       abortController,
     };
 
