@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getElectronAPI, GitHubIssue } from '@/lib/electron';
 import { useAppStore } from '@/store/app-store';
 
@@ -9,41 +9,59 @@ export function useGithubIssues() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   const fetchIssues = useCallback(async () => {
     if (!currentProject?.path) {
-      setError('No project selected');
-      setLoading(false);
+      if (isMountedRef.current) {
+        setError('No project selected');
+        setLoading(false);
+      }
       return;
     }
 
     try {
-      setError(null);
+      if (isMountedRef.current) {
+        setError(null);
+      }
       const api = getElectronAPI();
       if (api.github) {
         const result = await api.github.listIssues(currentProject.path);
-        if (result.success) {
-          setOpenIssues(result.openIssues || []);
-          setClosedIssues(result.closedIssues || []);
-        } else {
-          setError(result.error || 'Failed to fetch issues');
+        if (isMountedRef.current) {
+          if (result.success) {
+            setOpenIssues(result.openIssues || []);
+            setClosedIssues(result.closedIssues || []);
+          } else {
+            setError(result.error || 'Failed to fetch issues');
+          }
         }
       }
     } catch (err) {
-      console.error('[GitHubIssuesView] Error fetching issues:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch issues');
+      if (isMountedRef.current) {
+        console.error('[GitHubIssuesView] Error fetching issues:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch issues');
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [currentProject?.path]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     fetchIssues();
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [fetchIssues]);
 
   const refresh = useCallback(() => {
-    setRefreshing(true);
+    if (isMountedRef.current) {
+      setRefreshing(true);
+    }
     fetchIssues();
   }, [fetchIssues]);
 
