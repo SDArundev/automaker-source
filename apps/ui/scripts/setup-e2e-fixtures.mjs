@@ -46,7 +46,7 @@ const E2E_SETTINGS = {
   defaultSkipTests: true,
   enableDependencyBlocking: true,
   skipVerificationInAutoMode: false,
-  useWorktrees: false,
+  useWorktrees: true,
   showProfilesOnly: false,
   defaultPlanningMode: 'skip',
   defaultRequirePlanApproval: false,
