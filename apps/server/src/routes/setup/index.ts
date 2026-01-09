@@ -21,6 +21,9 @@ import { createAuthCursorHandler } from './routes/auth-cursor.js';
 import { createDeauthClaudeHandler } from './routes/deauth-claude.js';
 import { createDeauthCodexHandler } from './routes/deauth-codex.js';
 import { createDeauthCursorHandler } from './routes/deauth-cursor.js';
+import { createAuthOpencodeHandler } from './routes/auth-opencode.js';
+import { createDeauthOpencodeHandler } from './routes/deauth-opencode.js';
+import { createOpencodeStatusHandler } from './routes/opencode-status.js';
 import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
@@ -57,6 +60,11 @@ export function createSetupRoutes(): Router {
   router.post('/install-codex', createInstallCodexHandler());
   router.post('/auth-codex', createAuthCodexHandler());
   router.post('/deauth-codex', createDeauthCodexHandler());
+
+  // OpenCode CLI routes
+  router.get('/opencode-status', createOpencodeStatusHandler());
+  router.post('/auth-opencode', createAuthOpencodeHandler());
+  router.post('/deauth-opencode', createDeauthOpencodeHandler());
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());
   router.post('/cursor-config/models', createSetCursorModelsHandler());

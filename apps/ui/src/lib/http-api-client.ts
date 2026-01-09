@@ -1163,6 +1163,24 @@ export class HttpApiClient implements ElectronAPI {
       error?: string;
     }> => this.post('/api/setup/deauth-cursor'),
 
+    authOpencode: (): Promise<{
+      success: boolean;
+      token?: string;
+      requiresManualAuth?: boolean;
+      terminalOpened?: boolean;
+      command?: string;
+      message?: string;
+      output?: string;
+    }> => this.post('/api/setup/auth-opencode'),
+
+    deauthOpencode: (): Promise<{
+      success: boolean;
+      requiresManualDeauth?: boolean;
+      command?: string;
+      message?: string;
+      error?: string;
+    }> => this.post('/api/setup/deauth-opencode'),
+
     getCursorConfig: (
       projectPath: string
     ): Promise<{
@@ -1321,6 +1339,32 @@ export class HttpApiClient implements ElectronAPI {
       authenticated: boolean;
       error?: string;
     }> => this.post('/api/setup/verify-codex-auth', { authMethod, apiKey }),
+
+    // OpenCode CLI methods
+    getOpencodeStatus: (): Promise<{
+      success: boolean;
+      status?: string;
+      installed?: boolean;
+      method?: string;
+      version?: string;
+      path?: string;
+      recommendation?: string;
+      installCommands?: {
+        macos?: string;
+        linux?: string;
+        npm?: string;
+      };
+      auth?: {
+        authenticated: boolean;
+        method: string;
+        hasAuthFile?: boolean;
+        hasOAuthToken?: boolean;
+        hasApiKey?: boolean;
+        hasStoredApiKey?: boolean;
+        hasEnvApiKey?: boolean;
+      };
+      error?: string;
+    }> => this.get('/api/setup/opencode-status'),
 
     onInstallProgress: (callback: (progress: unknown) => void) => {
       return this.subscribeToEvent('agent:stream', callback);
