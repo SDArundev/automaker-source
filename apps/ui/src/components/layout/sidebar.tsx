@@ -59,7 +59,7 @@ export function Sidebar() {
   } = useAppStore();
 
   // Environment variable flags for hiding sidebar items
-  const { hideTerminal, hideWiki, hideRunningAgents, hideContext, hideSpecEditor, hideAiProfiles } =
+  const { hideTerminal, hideWiki, hideRunningAgents, hideContext, hideSpecEditor } =
     SIDEBAR_FEATURE_FLAGS;
 
   // Get customizable keyboard shortcuts
@@ -232,7 +232,6 @@ export function Sidebar() {
     hideSpecEditor,
     hideContext,
     hideTerminal,
-    hideAiProfiles,
     currentProject,
     projects,
     projectHistory,

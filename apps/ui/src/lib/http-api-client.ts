@@ -1863,14 +1863,11 @@ export class HttpApiClient implements ElectronAPI {
         defaultSkipTests: boolean;
         enableDependencyBlocking: boolean;
         useWorktrees: boolean;
-        showProfilesOnly: boolean;
         defaultPlanningMode: string;
         defaultRequirePlanApproval: boolean;
-        defaultAIProfileId: string | null;
         muteDoneSound: boolean;
         enhancementModel: string;
         keyboardShortcuts: Record<string, string>;
-        aiProfiles: unknown[];
         projects: unknown[];
         trashedProjects: unknown[];
         projectHistory: string[];

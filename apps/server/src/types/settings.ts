@@ -13,7 +13,6 @@ export type {
   ThinkingLevel,
   ModelProvider,
   KeyboardShortcuts,
-  AIProfile,
   ProjectRef,
   TrashedProjectRef,
   ChatSessionRef,

@@ -73,8 +73,6 @@ export function BoardView() {
     maxConcurrency,
     setMaxConcurrency,
     defaultSkipTests,
-    showProfilesOnly,
-    aiProfiles,
     kanbanCardDetailLevel,
     setKanbanCardDetailLevel,
     boardViewMode,
@@ -1299,8 +1297,6 @@ export function BoardView() {
         onClose={() => setShowMassEditDialog(false)}
         selectedFeatures={selectedFeatures}
         onApply={handleBulkUpdate}
-        showProfilesOnly={showProfilesOnly}
-        aiProfiles={aiProfiles}
       />
 
       {/* Board Background Modal */}
@@ -1348,8 +1344,6 @@ export function BoardView() {
         defaultBranch={selectedWorktreeBranch}
         currentBranch={currentWorktreeBranch || undefined}
         isMaximized={isMaximized}
-        showProfilesOnly={showProfilesOnly}
-        aiProfiles={aiProfiles}
         parentFeature={spawnParentFeature}
         allFeatures={hookFeatures}
       />
@@ -1364,8 +1358,6 @@ export function BoardView() {
         branchCardCounts={branchCardCounts}
         currentBranch={currentWorktreeBranch || undefined}
         isMaximized={isMaximized}
-        showProfilesOnly={showProfilesOnly}
-        aiProfiles={aiProfiles}
         allFeatures={hookFeatures}
       />
 

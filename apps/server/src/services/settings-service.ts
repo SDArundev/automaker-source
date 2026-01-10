@@ -22,7 +22,6 @@ import type {
   Credentials,
   ProjectSettings,
   KeyboardShortcuts,
-  AIProfile,
   ProjectRef,
   TrashedProjectRef,
   BoardBackgroundSettings,
@@ -299,7 +298,6 @@ export class SettingsService {
     ignoreEmptyArrayOverwrite('trashedProjects');
     ignoreEmptyArrayOverwrite('projectHistory');
     ignoreEmptyArrayOverwrite('recentFolders');
-    ignoreEmptyArrayOverwrite('aiProfiles');
     ignoreEmptyArrayOverwrite('mcpServers');
     ignoreEmptyArrayOverwrite('enabledCursorModels');
 
@@ -617,18 +615,15 @@ export class SettingsService {
             : false,
         useWorktrees:
           appState.useWorktrees !== undefined ? (appState.useWorktrees as boolean) : true,
-        showProfilesOnly: (appState.showProfilesOnly as boolean) || false,
         defaultPlanningMode:
           (appState.defaultPlanningMode as GlobalSettings['defaultPlanningMode']) || 'skip',
         defaultRequirePlanApproval: (appState.defaultRequirePlanApproval as boolean) || false,
-        defaultAIProfileId: (appState.defaultAIProfileId as string | null) || null,
         muteDoneSound: (appState.muteDoneSound as boolean) || false,
         enhancementModel:
           (appState.enhancementModel as GlobalSettings['enhancementModel']) || 'sonnet',
         keyboardShortcuts:
           (appState.keyboardShortcuts as KeyboardShortcuts) ||
           DEFAULT_GLOBAL_SETTINGS.keyboardShortcuts,
-        aiProfiles: (appState.aiProfiles as AIProfile[]) || [],
         projects: (appState.projects as ProjectRef[]) || [],
         trashedProjects: (appState.trashedProjects as TrashedProjectRef[]) || [],
         projectHistory: (appState.projectHistory as string[]) || [],

@@ -103,7 +103,6 @@ export type {
   PhaseModelConfig,
   PhaseModelKey,
   KeyboardShortcuts,
-  AIProfile,
   MCPToolInfo,
   MCPServerConfig,
   ProjectRef,
@@ -125,8 +124,6 @@ export {
   CREDENTIALS_VERSION,
   PROJECT_SETTINGS_VERSION,
   THINKING_TOKEN_BUDGET,
-  profileHasThinking,
-  getProfileModelString,
   getThinkingTokenBudget,
 } from './settings.js';
 

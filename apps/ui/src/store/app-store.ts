@@ -11,7 +11,6 @@ import type {
   PlanningMode,
   ThinkingLevel,
   ModelProvider,
-  AIProfile,
   CursorModelId,
   CodexModelId,
   OpencodeModelId,
@@ -40,7 +39,6 @@ export type {
   PlanningMode,
   ThinkingLevel,
   ModelProvider,
-  AIProfile,
   FeatureTextFilePath,
   FeatureImagePath,
 };
@@ -54,7 +52,6 @@ export type ViewMode =
   | 'settings'
   | 'interview'
   | 'context'
-  | 'profiles'
   | 'running-agents'
   | 'terminal'
   | 'wiki'
@@ -218,7 +215,6 @@ export interface KeyboardShortcuts {
   spec: string;
   context: string;
   settings: string;
-  profiles: string;
   terminal: string;
   ideation: string;
   githubIssues: string;
@@ -236,7 +232,6 @@ export interface KeyboardShortcuts {
   projectPicker: string;
   cyclePrevProject: string;
   cycleNextProject: string;
-  addProfile: string;
 
   // Terminal shortcuts
   splitTerminalRight: string;
@@ -253,7 +248,6 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
   spec: 'D',
   context: 'C',
   settings: 'S',
-  profiles: 'M',
   terminal: 'T',
   ideation: 'I',
   githubIssues: 'G',
@@ -263,7 +257,7 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
   toggleSidebar: '`',
 
   // Actions
-  // Note: Some shortcuts share the same key (e.g., "N" for addFeature, newSession, addProfile)
+  // Note: Some shortcuts share the same key (e.g., "N" for addFeature, newSession)
   // This is intentional as they are context-specific and only active in their respective views
   addFeature: 'N', // Only active in board view
   addContextFile: 'N', // Only active in context view
@@ -273,7 +267,6 @@ export const DEFAULT_KEYBOARD_SHORTCUTS: KeyboardShortcuts = {
   projectPicker: 'P', // Global shortcut
   cyclePrevProject: 'Q', // Global shortcut
   cycleNextProject: 'E', // Global shortcut
-  addProfile: 'N', // Only active in profiles view
 
   // Terminal shortcuts (only active in terminal view)
   // Using Alt modifier to avoid conflicts with both terminal signals AND browser shortcuts
@@ -539,12 +532,6 @@ export interface AppState {
     }>
   >;
 
-  // AI Profiles
-  aiProfiles: AIProfile[];
-
-  // Profile Display Settings
-  showProfilesOnly: boolean; // When true, hide model tweaking options and show only profile selection
-
   // Keyboard Shortcuts
   keyboardShortcuts: KeyboardShortcuts; // User-defined keyboard shortcuts
 
@@ -632,7 +619,6 @@ export interface AppState {
 
   defaultPlanningMode: PlanningMode;
   defaultRequirePlanApproval: boolean;
-  defaultAIProfileId: string | null;
 
   // Plan Approval State
   // When a plan requires user approval, this holds the pending approval details
@@ -907,9 +893,6 @@ export interface AppActions {
   isPrimaryWorktreeBranch: (projectPath: string, branchName: string) => boolean;
   getPrimaryWorktreeBranch: (projectPath: string) => string | null;
 
-  // Profile Display Settings actions
-  setShowProfilesOnly: (enabled: boolean) => void;
-
   // Keyboard Shortcuts actions
   setKeyboardShortcut: (key: keyof KeyboardShortcuts, value: string) => void;
   setKeyboardShortcuts: (shortcuts: Partial<KeyboardShortcuts>) => void;
@@ -960,13 +943,6 @@ export interface AppActions {
 
   // Prompt Customization actions
   setPromptCustomization: (customization: PromptCustomization) => Promise<void>;
-
-  // AI Profile actions
-  addAIProfile: (profile: Omit<AIProfile, 'id'>) => void;
-  updateAIProfile: (id: string, updates: Partial<AIProfile>) => void;
-  removeAIProfile: (id: string) => void;
-  reorderAIProfiles: (oldIndex: number, newIndex: number) => void;
-  resetAIProfiles: () => void;
 
   // MCP Server actions
   addMCPServer: (server: Omit<MCPServerConfig, 'id'>) => void;
@@ -1052,7 +1028,6 @@ export interface AppActions {
 
   setDefaultPlanningMode: (mode: PlanningMode) => void;
   setDefaultRequirePlanApproval: (require: boolean) => void;
-  setDefaultAIProfileId: (profileId: string | null) => void;
 
   // Plan Approval actions
   setPendingPlanApproval: (
@@ -1097,52 +1072,6 @@ export interface AppActions {
   reset: () => void;
 }
 
-// Default built-in AI profiles
-const DEFAULT_AI_PROFILES: AIProfile[] = [
-  // Claude profiles
-  {
-    id: 'profile-heavy-task',
-    name: 'Heavy Task',
-    description:
-      'Claude Opus with Ultrathink for complex architecture, migrations, or deep debugging.',
-    model: 'opus',
-    thinkingLevel: 'ultrathink',
-    provider: 'claude',
-    isBuiltIn: true,
-    icon: 'Brain',
-  },
-  {
-    id: 'profile-balanced',
-    name: 'Balanced',
-    description: 'Claude Sonnet with medium thinking for typical development tasks.',
-    model: 'sonnet',
-    thinkingLevel: 'medium',
-    provider: 'claude',
-    isBuiltIn: true,
-    icon: 'Scale',
-  },
-  {
-    id: 'profile-quick-edit',
-    name: 'Quick Edit',
-    description: 'Claude Haiku for fast, simple edits and minor fixes.',
-    model: 'haiku',
-    thinkingLevel: 'none',
-    provider: 'claude',
-    isBuiltIn: true,
-    icon: 'Zap',
-  },
-  // Cursor profiles
-  {
-    id: 'profile-cursor-refactoring',
-    name: 'Cursor Refactoring',
-    description: 'Cursor Composer 1 for refactoring tasks.',
-    provider: 'cursor',
-    cursorModel: 'composer-1',
-    isBuiltIn: true,
-    icon: 'Sparkles',
-  },
-];
-
 const initialState: AppState = {
   projects: [],
   currentProject: null,
@@ -1175,7 +1104,6 @@ const initialState: AppState = {
   useWorktrees: true, // Default to enabled (git worktree isolation)
   currentWorktreeByProject: {},
   worktreesByProject: {},
-  showProfilesOnly: false, // Default to showing all options (not profiles only)
   keyboardShortcuts: DEFAULT_KEYBOARD_SHORTCUTS, // Default keyboard shortcuts
   muteDoneSound: false, // Default to sound enabled (not muted)
   enhancementModel: 'sonnet', // Default to sonnet for feature enhancement
@@ -1201,7 +1129,6 @@ const initialState: AppState = {
   enableSubagents: true, // Subagents enabled by default
   subagentsSources: ['user', 'project'] as Array<'user' | 'project'>, // Load from both sources by default
   promptCustomization: {}, // Empty by default - all prompts use built-in defaults
-  aiProfiles: DEFAULT_AI_PROFILES,
   projectAnalysis: null,
   isAnalyzing: false,
   boardBackgroundByProject: {},
@@ -1226,7 +1153,6 @@ const initialState: AppState = {
   specCreatingForProject: null,
   defaultPlanningMode: 'skip' as PlanningMode,
   defaultRequirePlanApproval: false,
-  defaultAIProfileId: null,
   pendingPlanApproval: null,
   claudeRefreshInterval: 60,
   claudeUsage: null,
@@ -1808,9 +1734,6 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     return primary?.branch ?? null;
   },
 
-  // Profile Display Settings actions
-  setShowProfilesOnly: (enabled) => set({ showProfilesOnly: enabled }),
-
   // Keyboard Shortcuts actions
   setKeyboardShortcut: (key, value) => {
     set({
@@ -1965,46 +1888,6 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
     // Sync to server settings file
     const { syncSettingsToServer } = await import('@/hooks/use-settings-migration');
     await syncSettingsToServer();
-  },
-
-  // AI Profile actions
-  addAIProfile: (profile) => {
-    const id = `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    set({ aiProfiles: [...get().aiProfiles, { ...profile, id }] });
-  },
-
-  updateAIProfile: (id, updates) => {
-    set({
-      aiProfiles: get().aiProfiles.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-    });
-  },
-
-  removeAIProfile: (id) => {
-    // Only allow removing non-built-in profiles
-    const profile = get().aiProfiles.find((p) => p.id === id);
-    if (profile && !profile.isBuiltIn) {
-      // Clear default if this profile was selected
-      if (get().defaultAIProfileId === id) {
-        set({ defaultAIProfileId: null });
-      }
-      set({ aiProfiles: get().aiProfiles.filter((p) => p.id !== id) });
-    }
-  },
-
-  reorderAIProfiles: (oldIndex, newIndex) => {
-    const profiles = [...get().aiProfiles];
-    const [movedProfile] = profiles.splice(oldIndex, 1);
-    profiles.splice(newIndex, 0, movedProfile);
-    set({ aiProfiles: profiles });
-  },
-
-  resetAIProfiles: () => {
-    // Merge: keep user-created profiles, but refresh all built-in profiles to latest defaults
-    const defaultProfileIds = new Set(DEFAULT_AI_PROFILES.map((p) => p.id));
-    const userProfiles = get().aiProfiles.filter(
-      (p) => !p.isBuiltIn && !defaultProfileIds.has(p.id)
-    );
-    set({ aiProfiles: [...DEFAULT_AI_PROFILES, ...userProfiles] });
   },
 
   // MCP Server actions
@@ -2995,7 +2878,6 @@ export const useAppStore = create<AppState & AppActions>()((set, get) => ({
 
   setDefaultPlanningMode: (mode) => set({ defaultPlanningMode: mode }),
   setDefaultRequirePlanApproval: (require) => set({ defaultRequirePlanApproval: require }),
-  setDefaultAIProfileId: (profileId) => set({ defaultAIProfileId: profileId }),
 
   // Plan Approval actions
   setPendingPlanApproval: (approval) => set({ pendingPlanApproval: approval }),

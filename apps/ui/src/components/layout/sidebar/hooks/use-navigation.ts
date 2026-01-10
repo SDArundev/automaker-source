@@ -5,11 +5,9 @@ import {
   LayoutGrid,
   Bot,
   BookOpen,
-  UserCircle,
   Terminal,
   CircleDot,
   GitPullRequest,
-  Zap,
   Lightbulb,
 } from 'lucide-react';
 import type { NavSection, NavItem } from '../types';
@@ -26,7 +24,6 @@ interface UseNavigationProps {
     cycleNextProject: string;
     spec: string;
     context: string;
-    profiles: string;
     board: string;
     agent: string;
     terminal: string;
@@ -38,7 +35,6 @@ interface UseNavigationProps {
   hideSpecEditor: boolean;
   hideContext: boolean;
   hideTerminal: boolean;
-  hideAiProfiles: boolean;
   currentProject: Project | null;
   projects: Project[];
   projectHistory: string[];
@@ -57,7 +53,6 @@ export function useNavigation({
   hideSpecEditor,
   hideContext,
   hideTerminal,
-  hideAiProfiles,
   currentProject,
   projects,
   projectHistory,
@@ -114,12 +109,6 @@ export function useNavigation({
         icon: BookOpen,
         shortcut: shortcuts.context,
       },
-      {
-        id: 'profiles',
-        label: 'AI Profiles',
-        icon: UserCircle,
-        shortcut: shortcuts.profiles,
-      },
     ];
 
     // Filter out hidden items
@@ -128,9 +117,6 @@ export function useNavigation({
         return false;
       }
       if (item.id === 'context' && hideContext) {
-        return false;
-      }
-      if (item.id === 'profiles' && hideAiProfiles) {
         return false;
       }
       return true;
@@ -201,7 +187,6 @@ export function useNavigation({
     hideSpecEditor,
     hideContext,
     hideTerminal,
-    hideAiProfiles,
     hasGitHubRemote,
     unviewedValidationsCount,
   ]);

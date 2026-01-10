@@ -32,24 +32,17 @@ import {
   ModelAlias,
   ThinkingLevel,
   FeatureImage,
-  AIProfile,
   PlanningMode,
   Feature,
 } from '@/store/app-store';
 import type { ReasoningEffort, PhaseModelEntry } from '@automaker/types';
-import {
-  supportsReasoningEffort,
-  PROVIDER_PREFIXES,
-  isCursorModel,
-  isClaudeModel,
-} from '@automaker/types';
+import { supportsReasoningEffort, isClaudeModel } from '@automaker/types';
 import {
   TestingTabContent,
   PrioritySelector,
   WorkModeSelector,
   PlanningModeSelect,
   AncestorContextSection,
-  ProfileTypeahead,
 } from '../shared';
 import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
@@ -60,7 +53,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNavigate } from '@tanstack/react-router';
 import {
   getAncestors,
   formatAncestorContextForPrompt,
@@ -100,8 +92,6 @@ interface AddFeatureDialogProps {
   defaultBranch?: string;
   currentBranch?: string;
   isMaximized: boolean;
-  showProfilesOnly: boolean;
-  aiProfiles: AIProfile[];
   parentFeature?: Feature | null;
   allFeatures?: Feature[];
 }
@@ -118,13 +108,10 @@ export function AddFeatureDialog({
   defaultBranch = 'main',
   currentBranch,
   isMaximized,
-  showProfilesOnly,
-  aiProfiles,
   parentFeature = null,
   allFeatures = [],
 }: AddFeatureDialogProps) {
   const isSpawnMode = !!parentFeature;
-  const navigate = useNavigate();
   const [workMode, setWorkMode] = useState<WorkMode>('current');
 
   // Form state
@@ -139,7 +126,6 @@ export function AddFeatureDialog({
   const [priority, setPriority] = useState(2);
 
   // Model selection state
-  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>();
   const [modelEntry, setModelEntry] = useState<PhaseModelEntry>({ model: 'opus' });
 
   // Check if current model supports planning mode (Claude/Anthropic only)
@@ -163,7 +149,7 @@ export function AddFeatureDialog({
   const [selectedAncestorIds, setSelectedAncestorIds] = useState<Set<string>>(new Set());
 
   // Get defaults from store
-  const { defaultPlanningMode, defaultRequirePlanApproval, defaultAIProfileId } = useAppStore();
+  const { defaultPlanningMode, defaultRequirePlanApproval } = useAppStore();
 
   // Enhancement model override
   const enhancementOverride = useModelOverride({ phase: 'enhancementModel' });
@@ -177,24 +163,12 @@ export function AddFeatureDialog({
     wasOpenRef.current = open;
 
     if (justOpened) {
-      const defaultProfile = defaultAIProfileId
-        ? aiProfiles.find((p) => p.id === defaultAIProfileId)
-        : null;
-
       setSkipTests(defaultSkipTests);
       setBranchName(defaultBranch || '');
       setWorkMode('current');
       setPlanningMode(defaultPlanningMode);
       setRequirePlanApproval(defaultRequirePlanApproval);
-
-      // Set model from default profile or fallback
-      if (defaultProfile) {
-        setSelectedProfileId(defaultProfile.id);
-        applyProfileToModel(defaultProfile);
-      } else {
-        setSelectedProfileId(undefined);
-        setModelEntry({ model: 'opus' });
-      }
+      setModelEntry({ model: 'opus' });
 
       // Initialize ancestors for spawn mode
       if (parentFeature) {
@@ -212,41 +186,12 @@ export function AddFeatureDialog({
     defaultBranch,
     defaultPlanningMode,
     defaultRequirePlanApproval,
-    defaultAIProfileId,
-    aiProfiles,
     parentFeature,
     allFeatures,
   ]);
 
-  const applyProfileToModel = (profile: AIProfile) => {
-    if (profile.provider === 'cursor') {
-      const cursorModel = `${PROVIDER_PREFIXES.cursor}${profile.cursorModel || 'auto'}`;
-      setModelEntry({ model: cursorModel as ModelAlias });
-    } else if (profile.provider === 'codex') {
-      setModelEntry({
-        model: profile.codexModel || 'codex-gpt-5.2-codex',
-        reasoningEffort: 'none',
-      });
-    } else if (profile.provider === 'opencode') {
-      setModelEntry({ model: profile.opencodeModel || 'opencode/big-pickle' });
-    } else {
-      // Claude
-      setModelEntry({
-        model: profile.model || 'sonnet',
-        thinkingLevel: profile.thinkingLevel || 'none',
-      });
-    }
-  };
-
-  const handleProfileSelect = (profile: AIProfile) => {
-    setSelectedProfileId(profile.id);
-    applyProfileToModel(profile);
-  };
-
   const handleModelChange = (entry: PhaseModelEntry) => {
     setModelEntry(entry);
-    // Clear profile selection when manually changing model
-    setSelectedProfileId(undefined);
   };
 
   const buildFeatureData = (): FeatureData | null => {
@@ -327,7 +272,6 @@ export function AddFeatureDialog({
     setSkipTests(defaultSkipTests);
     setBranchName('');
     setPriority(2);
-    setSelectedProfileId(undefined);
     setModelEntry({ model: 'opus' });
     setWorkMode('current');
     setPlanningMode(defaultPlanningMode);
@@ -538,31 +482,14 @@ export function AddFeatureDialog({
               <span>AI & Execution</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Profile</Label>
-                <ProfileTypeahead
-                  profiles={aiProfiles}
-                  selectedProfileId={selectedProfileId}
-                  onSelect={handleProfileSelect}
-                  placeholder="Select profile..."
-                  showManageLink
-                  onManageLinkClick={() => {
-                    onOpenChange(false);
-                    navigate({ to: '/profiles' });
-                  }}
-                  testIdPrefix="add-feature-profile"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Model</Label>
-                <PhaseModelSelector
-                  value={modelEntry}
-                  onChange={handleModelChange}
-                  compact
-                  align="end"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Model</Label>
+              <PhaseModelSelector
+                value={modelEntry}
+                onChange={handleModelChange}
+                compact
+                align="end"
+              />
             </div>
 
             <div

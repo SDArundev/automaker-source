@@ -34,21 +34,13 @@ import {
 import { toast } from 'sonner';
 import { getElectronAPI } from '@/lib/electron';
 import { cn, modelSupportsThinking } from '@/lib/utils';
-import {
-  Feature,
-  ModelAlias,
-  ThinkingLevel,
-  AIProfile,
-  useAppStore,
-  PlanningMode,
-} from '@/store/app-store';
+import { Feature, ModelAlias, ThinkingLevel, useAppStore, PlanningMode } from '@/store/app-store';
 import type { ReasoningEffort, PhaseModelEntry, DescriptionHistoryEntry } from '@automaker/types';
 import {
   TestingTabContent,
   PrioritySelector,
   WorkModeSelector,
   PlanningModeSelect,
-  ProfileTypeahead,
 } from '../shared';
 import type { WorkMode } from '../shared';
 import { PhaseModelSelector } from '@/components/views/settings-view/model-defaults/phase-model-selector';
@@ -61,13 +53,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DependencyTreeDialog } from './dependency-tree-dialog';
-import {
-  isCursorModel,
-  isClaudeModel,
-  PROVIDER_PREFIXES,
-  supportsReasoningEffort,
-} from '@automaker/types';
-import { useNavigate } from '@tanstack/react-router';
+import { isClaudeModel, supportsReasoningEffort } from '@automaker/types';
 
 const logger = createLogger('EditFeatureDialog');
 
@@ -99,8 +85,6 @@ interface EditFeatureDialogProps {
   branchCardCounts?: Record<string, number>; // Map of branch name to unarchived card count
   currentBranch?: string;
   isMaximized: boolean;
-  showProfilesOnly: boolean;
-  aiProfiles: AIProfile[];
   allFeatures: Feature[];
 }
 
@@ -113,11 +97,8 @@ export function EditFeatureDialog({
   branchCardCounts,
   currentBranch,
   isMaximized,
-  showProfilesOnly,
-  aiProfiles,
   allFeatures,
 }: EditFeatureDialogProps) {
-  const navigate = useNavigate();
   const [editingFeature, setEditingFeature] = useState<Feature | null>(feature);
   // Derive initial workMode from feature's branchName
   const [workMode, setWorkMode] = useState<WorkMode>(() => {
@@ -140,7 +121,6 @@ export function EditFeatureDialog({
   );
 
   // Model selection state
-  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>();
   const [modelEntry, setModelEntry] = useState<PhaseModelEntry>(() => ({
     model: (feature?.model as ModelAlias) || 'opus',
     thinkingLevel: feature?.thinkingLevel || 'none',
@@ -180,7 +160,6 @@ export function EditFeatureDialog({
         thinkingLevel: feature.thinkingLevel || 'none',
         reasoningEffort: feature.reasoningEffort || 'none',
       });
-      setSelectedProfileId(undefined);
     } else {
       setEditFeaturePreviewMap(new Map());
       setDescriptionChangeSource(null);
@@ -188,35 +167,8 @@ export function EditFeatureDialog({
     }
   }, [feature]);
 
-  const applyProfileToModel = (profile: AIProfile) => {
-    if (profile.provider === 'cursor') {
-      const cursorModel = `${PROVIDER_PREFIXES.cursor}${profile.cursorModel || 'auto'}`;
-      setModelEntry({ model: cursorModel as ModelAlias });
-    } else if (profile.provider === 'codex') {
-      setModelEntry({
-        model: profile.codexModel || 'codex-gpt-5.2-codex',
-        reasoningEffort: 'none',
-      });
-    } else if (profile.provider === 'opencode') {
-      setModelEntry({ model: profile.opencodeModel || 'opencode/big-pickle' });
-    } else {
-      // Claude
-      setModelEntry({
-        model: profile.model || 'sonnet',
-        thinkingLevel: profile.thinkingLevel || 'none',
-      });
-    }
-  };
-
-  const handleProfileSelect = (profile: AIProfile) => {
-    setSelectedProfileId(profile.id);
-    applyProfileToModel(profile);
-  };
-
   const handleModelChange = (entry: PhaseModelEntry) => {
     setModelEntry(entry);
-    // Clear profile selection when manually changing model
-    setSelectedProfileId(undefined);
   };
 
   const handleUpdate = () => {
@@ -554,31 +506,14 @@ export function EditFeatureDialog({
               <span>AI & Execution</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Profile</Label>
-                <ProfileTypeahead
-                  profiles={aiProfiles}
-                  selectedProfileId={selectedProfileId}
-                  onSelect={handleProfileSelect}
-                  placeholder="Select profile..."
-                  showManageLink
-                  onManageLinkClick={() => {
-                    onClose();
-                    navigate({ to: '/profiles' });
-                  }}
-                  testIdPrefix="edit-feature-profile"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Model</Label>
-                <PhaseModelSelector
-                  value={modelEntry}
-                  onChange={handleModelChange}
-                  compact
-                  align="end"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Model</Label>
+              <PhaseModelSelector
+                value={modelEntry}
+                onChange={handleModelChange}
+                compact
+                align="end"
+              />
             </div>
 
             <div
