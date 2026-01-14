@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { BranchAutocomplete } from '@/components/ui/branch-autocomplete';
 import { GitPullRequest, Loader2, ExternalLink } from 'lucide-react';
 import { getElectronAPI } from '@/lib/electron';
 import { toast } from 'sonner';
@@ -52,8 +53,37 @@ export function CreatePRDialog({
   const [prUrl, setPrUrl] = useState<string | null>(null);
   const [browserUrl, setBrowserUrl] = useState<string | null>(null);
   const [showBrowserFallback, setShowBrowserFallback] = useState(false);
+  // Branch fetching state
+  const [branches, setBranches] = useState<string[]>([]);
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false);
   // Track whether an operation completed that warrants a refresh
   const operationCompletedRef = useRef(false);
+
+  // Fetch branches for autocomplete
+  const fetchBranches = useCallback(async () => {
+    if (!worktree?.path) return;
+
+    setIsLoadingBranches(true);
+    try {
+      const api = getElectronAPI();
+      if (!api?.worktree?.listBranches) {
+        return;
+      }
+      // Fetch both local and remote branches for PR base branch selection
+      const result = await api.worktree.listBranches(worktree.path, true);
+      if (result.success && result.result) {
+        // Extract branch names, filtering out the current worktree branch
+        const branchNames = result.result.branches
+          .map((b) => b.name)
+          .filter((name) => name !== worktree.branch);
+        setBranches(branchNames);
+      }
+    } catch {
+      // Silently fail - branches will default to main only
+    } finally {
+      setIsLoadingBranches(false);
+    }
+  }, [worktree?.path, worktree?.branch]);
 
   // Reset state when dialog opens or worktree changes
   useEffect(() => {
@@ -72,6 +102,9 @@ export function CreatePRDialog({
       setShowBrowserFallback(false);
       // Reset operation tracking
       operationCompletedRef.current = false;
+      // Reset branches and fetch fresh ones
+      setBranches([]);
+      fetchBranches();
     } else {
       // Reset everything when dialog closes
       setTitle('');
@@ -84,8 +117,9 @@ export function CreatePRDialog({
       setBrowserUrl(null);
       setShowBrowserFallback(false);
       operationCompletedRef.current = false;
+      setBranches([]);
     }
-  }, [open, worktree?.path, defaultBaseBranch]);
+  }, [open, worktree?.path, defaultBaseBranch, fetchBranches]);
 
   const handleCreate = async () => {
     if (!worktree) return;
@@ -346,15 +380,16 @@ export function CreatePRDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="base-branch">Base Branch</Label>
-                  <Input
-                    id="base-branch"
-                    placeholder="main"
+                  <BranchAutocomplete
                     value={baseBranch}
-                    onChange={(e) => setBaseBranch(e.target.value)}
-                    className="font-mono text-sm"
+                    onChange={setBaseBranch}
+                    branches={branches}
+                    placeholder="Select base branch..."
+                    disabled={isLoadingBranches}
+                    data-testid="base-branch-autocomplete"
                   />
                 </div>
                 <div className="flex items-end">

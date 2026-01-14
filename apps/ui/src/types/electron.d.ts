@@ -858,8 +858,11 @@ export interface WorktreeAPI {
     code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
   }>;
 
-  // List all local branches
-  listBranches: (worktreePath: string) => Promise<{
+  // List branches (local and optionally remote)
+  listBranches: (
+    worktreePath: string,
+    includeRemote?: boolean
+  ) => Promise<{
     success: boolean;
     result?: {
       currentBranch: string;
