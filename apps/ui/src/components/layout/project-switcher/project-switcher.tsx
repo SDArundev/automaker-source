@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Plus, Bug } from 'lucide-react';
+import { Plus, Bug, FolderOpen } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/app-store';
+import { useAppStore, type ThemeMode } from '@/store/app-store';
 import { useOSDetection } from '@/hooks/use-os-detection';
 import { ProjectSwitcherItem } from './components/project-switcher-item';
 import { ProjectContextMenu } from './components/project-context-menu';
@@ -12,6 +12,9 @@ import { OnboardingDialog } from '@/components/layout/sidebar/dialogs';
 import { useProjectCreation, useProjectTheme } from '@/components/layout/sidebar/hooks';
 import type { Project } from '@/lib/electron';
 import { getElectronAPI } from '@/lib/electron';
+import { initializeProject, hasAppSpec, hasAutomakerDir } from '@/lib/project-init';
+import { toast } from 'sonner';
+import { CreateSpecDialog } from '@/components/views/spec-view/dialogs';
 
 function getOSAbbreviation(os: string): string {
   switch (os) {
@@ -34,12 +37,25 @@ export function ProjectSwitcher() {
     setCurrentProject,
     trashedProjects,
     upsertAndSetCurrentProject,
+    specCreatingForProject,
+    setSpecCreatingForProject,
   } = useAppStore();
   const [contextMenuProject, setContextMenuProject] = useState<Project | null>(null);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(
     null
   );
   const [editDialogProject, setEditDialogProject] = useState<Project | null>(null);
+
+  // Setup dialog state for opening existing projects
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [setupProjectPath, setSetupProjectPath] = useState<string | null>(null);
+  const [projectOverview, setProjectOverview] = useState('');
+  const [generateFeatures, setGenerateFeatures] = useState(true);
+  const [analyzeProject, setAnalyzeProject] = useState(true);
+  const [featureCount, setFeatureCount] = useState(5);
+
+  // Derive isCreatingSpec from store state
+  const isCreatingSpec = specCreatingForProject !== null;
 
   // Version info
   const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
@@ -106,6 +122,109 @@ export function ProjectSwitcher() {
   const handleBugReportClick = useCallback(() => {
     const api = getElectronAPI();
     api.openExternalLink('https://github.com/AutoMaker-Org/automaker/issues');
+  }, []);
+
+  /**
+   * Opens the system folder selection dialog and initializes the selected project.
+   */
+  const handleOpenFolder = useCallback(async () => {
+    const api = getElectronAPI();
+    const result = await api.openDirectory();
+
+    if (!result.canceled && result.filePaths[0]) {
+      const path = result.filePaths[0];
+      // Extract folder name from path (works on both Windows and Mac/Linux)
+      const name = path.split(/[/\\]/).filter(Boolean).pop() || 'Untitled Project';
+
+      try {
+        // Check if this is a brand new project (no .automaker directory)
+        const hadAutomakerDir = await hasAutomakerDir(path);
+
+        // Initialize the .automaker directory structure
+        const initResult = await initializeProject(path);
+
+        if (!initResult.success) {
+          toast.error('Failed to initialize project', {
+            description: initResult.error || 'Unknown error occurred',
+          });
+          return;
+        }
+
+        // Upsert project and set as current (handles both create and update cases)
+        // Theme preservation is handled by the store action
+        const trashedProject = trashedProjects.find((p) => p.path === path);
+        const effectiveTheme =
+          (trashedProject?.theme as ThemeMode | undefined) ||
+          (currentProject?.theme as ThemeMode | undefined) ||
+          globalTheme;
+        upsertAndSetCurrentProject(path, name, effectiveTheme);
+
+        // Check if app_spec.txt exists
+        const specExists = await hasAppSpec(path);
+
+        if (!hadAutomakerDir && !specExists) {
+          // This is a brand new project - show setup dialog
+          setSetupProjectPath(path);
+          setShowSetupDialog(true);
+          toast.success('Project opened', {
+            description: `Opened ${name}. Let's set up your app specification!`,
+          });
+        } else if (initResult.createdFiles && initResult.createdFiles.length > 0) {
+          toast.success(initResult.isNewProject ? 'Project initialized' : 'Project updated', {
+            description: `Set up ${initResult.createdFiles.length} file(s) in .automaker`,
+          });
+        } else {
+          toast.success('Project opened', {
+            description: `Opened ${name}`,
+          });
+        }
+
+        // Navigate to board view
+        navigate({ to: '/board' });
+      } catch (error) {
+        console.error('Failed to open project:', error);
+        toast.error('Failed to open project', {
+          description: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+  }, [trashedProjects, upsertAndSetCurrentProject, currentProject, globalTheme, navigate]);
+
+  // Handler for creating initial spec from the setup dialog
+  const handleCreateInitialSpec = useCallback(async () => {
+    if (!setupProjectPath) return;
+
+    setSpecCreatingForProject(setupProjectPath);
+    setShowSetupDialog(false);
+
+    try {
+      const api = getElectronAPI();
+      await api.generateAppSpec({
+        projectPath: setupProjectPath,
+        projectOverview,
+        generateFeatures,
+        analyzeProject,
+        featureCount,
+      });
+    } catch (error) {
+      console.error('Failed to generate spec:', error);
+      toast.error('Failed to generate spec', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      });
+      setSpecCreatingForProject(null);
+    }
+  }, [
+    setupProjectPath,
+    projectOverview,
+    generateFeatures,
+    analyzeProject,
+    featureCount,
+    setSpecCreatingForProject,
+  ]);
+
+  const handleSkipSetup = useCallback(() => {
+    setShowSetupDialog(false);
+    setSetupProjectPath(null);
   }, []);
 
   // Keyboard shortcuts for project switching (1-9, 0)
@@ -204,7 +323,7 @@ export function ProjectSwitcher() {
         </div>
 
         {/* Projects List */}
-        <div className="flex-1 overflow-y-auto py-3 px-2 space-y-2">
+        <div className="flex-1 overflow-y-auto pt-1 pb-3 px-2 space-y-2">
           {projects.map((project, index) => (
             <ProjectSwitcherItem
               key={project.id}
@@ -219,7 +338,7 @@ export function ProjectSwitcher() {
           {/* Horizontal rule and Add Project Button - only show if there are projects */}
           {projects.length > 0 && (
             <>
-              <div className="w-full h-px bg-border/40 my-2" />
+              <div className="w-full h-px bg-border my-2" />
               <button
                 onClick={handleNewProject}
                 className={cn(
@@ -234,25 +353,55 @@ export function ProjectSwitcher() {
               >
                 <Plus className="w-5 h-5" />
               </button>
+              <button
+                onClick={handleOpenFolder}
+                className={cn(
+                  'w-full aspect-square rounded-xl flex items-center justify-center',
+                  'transition-all duration-200 ease-out',
+                  'text-muted-foreground hover:text-foreground',
+                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
+                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                )}
+                title="Open Project"
+                data-testid="open-project-button"
+              >
+                <FolderOpen className="w-5 h-5" />
+              </button>
             </>
           )}
 
           {/* Add Project Button - when no projects, show without rule */}
           {projects.length === 0 && (
-            <button
-              onClick={handleNewProject}
-              className={cn(
-                'w-full aspect-square rounded-xl flex items-center justify-center',
-                'transition-all duration-200 ease-out',
-                'text-muted-foreground hover:text-foreground',
-                'hover:bg-accent/50 border border-transparent hover:border-border/40',
-                'hover:shadow-sm hover:scale-105 active:scale-95'
-              )}
-              title="New Project"
-              data-testid="new-project-button"
-            >
-              <Plus className="w-5 h-5" />
-            </button>
+            <>
+              <button
+                onClick={handleNewProject}
+                className={cn(
+                  'w-full aspect-square rounded-xl flex items-center justify-center',
+                  'transition-all duration-200 ease-out',
+                  'text-muted-foreground hover:text-foreground',
+                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
+                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                )}
+                title="New Project"
+                data-testid="new-project-button"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button
+                onClick={handleOpenFolder}
+                className={cn(
+                  'w-full aspect-square rounded-xl flex items-center justify-center',
+                  'transition-all duration-200 ease-out',
+                  'text-muted-foreground hover:text-foreground',
+                  'hover:bg-accent/50 border border-transparent hover:border-border/40',
+                  'hover:shadow-sm hover:scale-105 active:scale-95'
+                )}
+                title="Open Project"
+                data-testid="open-project-button"
+              >
+                <FolderOpen className="w-5 h-5" />
+              </button>
+            </>
           )}
         </div>
 
@@ -311,6 +460,26 @@ export function ProjectSwitcher() {
         newProjectName={newProjectName}
         onSkip={handleOnboardingSkip}
         onGenerateSpec={handleOnboardingSkip}
+      />
+
+      {/* Setup Dialog for Open Project */}
+      <CreateSpecDialog
+        open={showSetupDialog}
+        onOpenChange={setShowSetupDialog}
+        projectOverview={projectOverview}
+        onProjectOverviewChange={setProjectOverview}
+        generateFeatures={generateFeatures}
+        onGenerateFeaturesChange={setGenerateFeatures}
+        analyzeProject={analyzeProject}
+        onAnalyzeProjectChange={setAnalyzeProject}
+        featureCount={featureCount}
+        onFeatureCountChange={setFeatureCount}
+        onCreateSpec={handleCreateInitialSpec}
+        onSkip={handleSkipSetup}
+        isCreatingSpec={isCreatingSpec}
+        showSkipButton={true}
+        title="Set Up Your Project"
+        description="We didn't find an app_spec.txt file. Let us help you generate your app_spec.txt to help describe your project for our system. We'll analyze your project's tech stack and create a comprehensive specification."
       />
     </>
   );

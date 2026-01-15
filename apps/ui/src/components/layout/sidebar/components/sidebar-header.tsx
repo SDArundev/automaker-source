@@ -2,7 +2,7 @@ import { Folder, LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { cn, isMac } from '@/lib/utils';
 import { getAuthenticatedImageUrl } from '@/lib/api-fetch';
-import type { Project } from '@/lib/electron';
+import { isElectron, type Project } from '@/lib/electron';
 
 interface SidebarHeaderProps {
   sidebarOpen: boolean;
@@ -25,14 +25,17 @@ export function SidebarHeader({ sidebarOpen, currentProject }: SidebarHeaderProp
     <div
       className={cn(
         'shrink-0 flex flex-col',
-        // Add minimal padding on macOS for traffic light buttons
-        isMac && 'pt-2'
+        // Add padding on macOS Electron for traffic light buttons
+        isMac && isElectron() && 'pt-[10px]'
       )}
     >
       {/* Project name and icon display */}
       {currentProject && (
         <div
-          className={cn('flex items-center gap-3 px-4 py-3', !sidebarOpen && 'justify-center px-2')}
+          className={cn(
+            'flex items-center gap-3 px-4 pt-3 pb-1',
+            !sidebarOpen && 'justify-center px-2'
+          )}
         >
           {/* Project Icon */}
           <div className="shrink-0">

@@ -628,8 +628,8 @@ export function useBoardActions({
         currentProject.path,
         followUpFeature.id,
         followUpPrompt,
-        imagePaths
-        // No worktreePath - server derives from feature.branchName
+        imagePaths,
+        useWorktrees
       );
 
       if (!result.success) {
@@ -667,6 +667,7 @@ export function useBoardActions({
     setFollowUpPrompt,
     setFollowUpImagePaths,
     setFollowUpPreviewMap,
+    useWorktrees,
   ]);
 
   const handleCommitFeature = useCallback(

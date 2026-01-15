@@ -4,6 +4,7 @@ import { GitBranch, Plus, RefreshCw } from 'lucide-react';
 import { cn, pathsEqual } from '@/lib/utils';
 import { toast } from 'sonner';
 import { getHttpApiClient } from '@/lib/http-api-client';
+import { useIsMobile } from '@/hooks/use-media-query';
 import type { WorktreePanelProps, WorktreeInfo } from './types';
 import {
   useWorktrees,
@@ -12,7 +13,13 @@ import {
   useWorktreeActions,
   useRunningFeatures,
 } from './hooks';
-import { WorktreeTab } from './components';
+import {
+  WorktreeTab,
+  DevServerLogsPanel,
+  WorktreeMobileDropdown,
+  WorktreeActionsDropdown,
+  BranchSwitchDropdown,
+} from './components';
 
 export function WorktreePanel({
   projectPath,
@@ -23,6 +30,7 @@ export function WorktreePanel({
   onCreateBranch,
   onAddressPRComments,
   onResolveConflicts,
+  onMerge,
   onRemovedWorktrees,
   runningFeatureIds = [],
   features = [],
@@ -84,6 +92,10 @@ export function WorktreePanel({
   // Track whether init script exists for the project
   const [hasInitScript, setHasInitScript] = useState(false);
 
+  // Log panel state management
+  const [logPanelOpen, setLogPanelOpen] = useState(false);
+  const [logPanelWorktree, setLogPanelWorktree] = useState<WorktreeInfo | null>(null);
+
   useEffect(() => {
     if (!projectPath) {
       setHasInitScript(false);
@@ -102,6 +114,8 @@ export function WorktreePanel({
 
     checkInitScript();
   }, [projectPath]);
+
+  const isMobile = useIsMobile();
 
   // Periodic interval check (5 seconds) to detect branch changes on disk
   // Reduced from 1s to 5s to minimize GPU/CPU usage from frequent re-renders
@@ -164,9 +178,122 @@ export function WorktreePanel({
     [projectPath]
   );
 
+  // Handle opening the log panel for a specific worktree
+  const handleViewDevServerLogs = useCallback((worktree: WorktreeInfo) => {
+    setLogPanelWorktree(worktree);
+    setLogPanelOpen(true);
+  }, []);
+
+  // Handle closing the log panel
+  const handleCloseLogPanel = useCallback(() => {
+    setLogPanelOpen(false);
+    // Keep logPanelWorktree set for smooth close animation
+  }, []);
+
   const mainWorktree = worktrees.find((w) => w.isMain);
   const nonMainWorktrees = worktrees.filter((w) => !w.isMain);
 
+  // Mobile view: single dropdown for all worktrees
+  if (isMobile) {
+    // Find the currently selected worktree for the actions menu
+    const selectedWorktree = worktrees.find((w) => isWorktreeSelected(w)) || mainWorktree;
+
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-glass/50 backdrop-blur-sm">
+        <WorktreeMobileDropdown
+          worktrees={worktrees}
+          isWorktreeSelected={isWorktreeSelected}
+          hasRunningFeatures={hasRunningFeatures}
+          isActivating={isActivating}
+          branchCardCounts={branchCardCounts}
+          onSelectWorktree={handleSelectWorktree}
+        />
+
+        {/* Branch switch dropdown for the selected worktree */}
+        {selectedWorktree && (
+          <BranchSwitchDropdown
+            worktree={selectedWorktree}
+            isSelected={true}
+            standalone={true}
+            branches={branches}
+            filteredBranches={filteredBranches}
+            branchFilter={branchFilter}
+            isLoadingBranches={isLoadingBranches}
+            isSwitching={isSwitching}
+            onOpenChange={handleBranchDropdownOpenChange(selectedWorktree)}
+            onFilterChange={setBranchFilter}
+            onSwitchBranch={handleSwitchBranch}
+            onCreateBranch={onCreateBranch}
+          />
+        )}
+
+        {/* Actions menu for the selected worktree */}
+        {selectedWorktree && (
+          <WorktreeActionsDropdown
+            worktree={selectedWorktree}
+            isSelected={true}
+            standalone={true}
+            aheadCount={aheadCount}
+            behindCount={behindCount}
+            isPulling={isPulling}
+            isPushing={isPushing}
+            isStartingDevServer={isStartingDevServer}
+            isDevServerRunning={isDevServerRunning(selectedWorktree)}
+            devServerInfo={getDevServerInfo(selectedWorktree)}
+            gitRepoStatus={gitRepoStatus}
+            onOpenChange={handleActionsDropdownOpenChange(selectedWorktree)}
+            onPull={handlePull}
+            onPush={handlePush}
+            onOpenInEditor={handleOpenInEditor}
+            onCommit={onCommit}
+            onCreatePR={onCreatePR}
+            onAddressPRComments={onAddressPRComments}
+            onResolveConflicts={onResolveConflicts}
+            onMerge={onMerge}
+            onDeleteWorktree={onDeleteWorktree}
+            onStartDevServer={handleStartDevServer}
+            onStopDevServer={handleStopDevServer}
+            onOpenDevServerUrl={handleOpenDevServerUrl}
+            onViewDevServerLogs={handleViewDevServerLogs}
+            onRunInitScript={handleRunInitScript}
+            hasInitScript={hasInitScript}
+          />
+        )}
+
+        {useWorktreesEnabled && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={onCreateWorktree}
+              title="Create new worktree"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0"
+              onClick={async () => {
+                const removedWorktrees = await fetchWorktrees();
+                if (removedWorktrees && removedWorktrees.length > 0 && onRemovedWorktrees) {
+                  onRemovedWorktrees(removedWorktrees);
+                }
+              }}
+              disabled={isLoading}
+              title="Refresh worktrees"
+            >
+              <RefreshCw className={cn('w-3.5 h-3.5', isLoading && 'animate-spin')} />
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Desktop view: full tabs layout
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-glass/50 backdrop-blur-sm">
       <GitBranch className="w-4 h-4 text-muted-foreground" />
@@ -209,10 +336,12 @@ export function WorktreePanel({
             onCreatePR={onCreatePR}
             onAddressPRComments={onAddressPRComments}
             onResolveConflicts={onResolveConflicts}
+            onMerge={onMerge}
             onDeleteWorktree={onDeleteWorktree}
             onStartDevServer={handleStartDevServer}
             onStopDevServer={handleStopDevServer}
             onOpenDevServerUrl={handleOpenDevServerUrl}
+            onViewDevServerLogs={handleViewDevServerLogs}
             onRunInitScript={handleRunInitScript}
             hasInitScript={hasInitScript}
           />
@@ -265,10 +394,12 @@ export function WorktreePanel({
                   onCreatePR={onCreatePR}
                   onAddressPRComments={onAddressPRComments}
                   onResolveConflicts={onResolveConflicts}
+                  onMerge={onMerge}
                   onDeleteWorktree={onDeleteWorktree}
                   onStartDevServer={handleStartDevServer}
                   onStopDevServer={handleStopDevServer}
                   onOpenDevServerUrl={handleOpenDevServerUrl}
+                  onViewDevServerLogs={handleViewDevServerLogs}
                   onRunInitScript={handleRunInitScript}
                   hasInitScript={hasInitScript}
                 />
@@ -303,6 +434,15 @@ export function WorktreePanel({
           </div>
         </>
       )}
+
+      {/* Dev Server Logs Panel */}
+      <DevServerLogsPanel
+        open={logPanelOpen}
+        onClose={handleCloseLogPanel}
+        worktree={logPanelWorktree}
+        onStopDevServer={handleStopDevServer}
+        onOpenDevServerUrl={handleOpenDevServerUrl}
+      />
     </div>
   );
 }

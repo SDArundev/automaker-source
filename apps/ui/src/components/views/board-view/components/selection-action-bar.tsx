@@ -30,9 +30,7 @@ export function SelectionActionBar({
 }: SelectionActionBarProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  if (selectedCount === 0) return null;
-
-  const allSelected = selectedCount === totalCount;
+  const allSelected = selectedCount === totalCount && totalCount > 0;
 
   const handleDeleteClick = () => {
     setShowDeleteDialog(true);
@@ -55,7 +53,9 @@ export function SelectionActionBar({
         data-testid="selection-action-bar"
       >
         <span className="text-sm font-medium text-foreground">
-          {selectedCount} feature{selectedCount !== 1 ? 's' : ''} selected
+          {selectedCount === 0
+            ? 'Select features to edit'
+            : `${selectedCount} feature${selectedCount !== 1 ? 's' : ''} selected`}
         </span>
 
         <div className="h-4 w-px bg-border" />
@@ -65,7 +65,8 @@ export function SelectionActionBar({
             variant="default"
             size="sm"
             onClick={onEdit}
-            className="h-8 bg-brand-500 hover:bg-brand-600"
+            disabled={selectedCount === 0}
+            className="h-8 bg-brand-500 hover:bg-brand-600 disabled:opacity-50"
             data-testid="selection-edit-button"
           >
             <Pencil className="w-4 h-4 mr-1.5" />
@@ -76,7 +77,8 @@ export function SelectionActionBar({
             variant="outline"
             size="sm"
             onClick={handleDeleteClick}
-            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+            disabled={selectedCount === 0}
+            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
             data-testid="selection-delete-button"
           >
             <Trash2 className="w-4 h-4 mr-1.5" />

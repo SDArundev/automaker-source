@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { JSX } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Globe, Loader2, CircleDot, GitPullRequest } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,10 +41,12 @@ interface WorktreeTabProps {
   onCreatePR: (worktree: WorktreeInfo) => void;
   onAddressPRComments: (worktree: WorktreeInfo, prInfo: PRInfo) => void;
   onResolveConflicts: (worktree: WorktreeInfo) => void;
+  onMerge: (worktree: WorktreeInfo) => void;
   onDeleteWorktree: (worktree: WorktreeInfo) => void;
   onStartDevServer: (worktree: WorktreeInfo) => void;
   onStopDevServer: (worktree: WorktreeInfo) => void;
   onOpenDevServerUrl: (worktree: WorktreeInfo) => void;
+  onViewDevServerLogs: (worktree: WorktreeInfo) => void;
   onRunInitScript: (worktree: WorktreeInfo) => void;
   hasInitScript: boolean;
 }
@@ -83,10 +85,12 @@ export function WorktreeTab({
   onCreatePR,
   onAddressPRComments,
   onResolveConflicts,
+  onMerge,
   onDeleteWorktree,
   onStartDevServer,
   onStopDevServer,
   onOpenDevServerUrl,
+  onViewDevServerLogs,
   onRunInitScript,
   hasInitScript,
 }: WorktreeTabProps) {
@@ -342,10 +346,12 @@ export function WorktreeTab({
         onCreatePR={onCreatePR}
         onAddressPRComments={onAddressPRComments}
         onResolveConflicts={onResolveConflicts}
+        onMerge={onMerge}
         onDeleteWorktree={onDeleteWorktree}
         onStartDevServer={onStartDevServer}
         onStopDevServer={onStopDevServer}
         onOpenDevServerUrl={onOpenDevServerUrl}
+        onViewDevServerLogs={onViewDevServerLogs}
         onRunInitScript={onRunInitScript}
         hasInitScript={hasInitScript}
       />

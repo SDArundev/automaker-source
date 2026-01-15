@@ -524,7 +524,7 @@ export interface AutoModeAPI {
     featureId: string,
     prompt: string,
     imagePaths?: string[],
-    worktreePath?: string
+    useWorktrees?: boolean
   ) => Promise<{ success: boolean; passes?: boolean; error?: string }>;
   commitFeature: (
     projectPath: string,
@@ -1440,13 +1440,19 @@ function createMockSetupAPI(): SetupAPI {
 // Mock Worktree API implementation
 function createMockWorktreeAPI(): WorktreeAPI {
   return {
-    mergeFeature: async (projectPath: string, featureId: string, options?: object) => {
+    mergeFeature: async (
+      projectPath: string,
+      branchName: string,
+      worktreePath: string,
+      options?: object
+    ) => {
       console.log('[Mock] Merging feature:', {
         projectPath,
-        featureId,
+        branchName,
+        worktreePath,
         options,
       });
-      return { success: true, mergedBranch: `feature/${featureId}` };
+      return { success: true, mergedBranch: branchName };
     },
 
     getInfo: async (projectPath: string, featureId: string) => {
@@ -1540,6 +1546,14 @@ function createMockWorktreeAPI(): WorktreeAPI {
           branch: 'feature-branch',
           message,
         },
+      };
+    },
+
+    generateCommitMessage: async (worktreePath: string) => {
+      console.log('[Mock] Generating commit message for:', worktreePath);
+      return {
+        success: true,
+        message: 'feat: Add mock commit message generation',
       };
     },
 
@@ -1763,6 +1777,22 @@ function createMockWorktreeAPI(): WorktreeAPI {
         result: {
           servers: [],
         },
+      };
+    },
+
+    getDevServerLogs: async (worktreePath: string) => {
+      console.log('[Mock] Getting dev server logs:', { worktreePath });
+      return {
+        success: false,
+        error: 'No dev server running for this worktree',
+      };
+    },
+
+    onDevServerLogEvent: (callback) => {
+      console.log('[Mock] Subscribing to dev server log events');
+      // Return unsubscribe function
+      return () => {
+        console.log('[Mock] Unsubscribing from dev server log events');
       };
     },
 
@@ -2089,7 +2119,7 @@ function createMockAutoModeAPI(): AutoModeAPI {
       featureId: string,
       prompt: string,
       imagePaths?: string[],
-      worktreePath?: string
+      useWorktrees?: boolean
     ) => {
       if (mockRunningFeatures.has(featureId)) {
         return {

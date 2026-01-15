@@ -17,6 +17,7 @@ import { createDeleteHandler } from './routes/delete.js';
 import { createCreatePRHandler } from './routes/create-pr.js';
 import { createPRInfoHandler } from './routes/pr-info.js';
 import { createCommitHandler } from './routes/commit.js';
+import { createGenerateCommitMessageHandler } from './routes/generate-commit-message.js';
 import { createPushHandler } from './routes/push.js';
 import { createPullHandler } from './routes/pull.js';
 import { createCheckoutBranchHandler } from './routes/checkout-branch.js';
@@ -33,14 +34,19 @@ import { createMigrateHandler } from './routes/migrate.js';
 import { createStartDevHandler } from './routes/start-dev.js';
 import { createStopDevHandler } from './routes/stop-dev.js';
 import { createListDevServersHandler } from './routes/list-dev-servers.js';
+import { createGetDevServerLogsHandler } from './routes/dev-server-logs.js';
 import {
   createGetInitScriptHandler,
   createPutInitScriptHandler,
   createDeleteInitScriptHandler,
   createRunInitScriptHandler,
 } from './routes/init-script.js';
+import type { SettingsService } from '../../services/settings-service.js';
 
-export function createWorktreeRoutes(events: EventEmitter): Router {
+export function createWorktreeRoutes(
+  events: EventEmitter,
+  settingsService?: SettingsService
+): Router {
   const router = Router();
 
   router.post('/info', validatePathParams('projectPath'), createInfoHandler());
@@ -63,6 +69,12 @@ export function createWorktreeRoutes(events: EventEmitter): Router {
     validatePathParams('worktreePath'),
     requireGitRepoOnly,
     createCommitHandler()
+  );
+  router.post(
+    '/generate-commit-message',
+    validatePathParams('worktreePath'),
+    requireGitRepoOnly,
+    createGenerateCommitMessageHandler(settingsService)
   );
   router.post(
     '/push',
@@ -97,6 +109,11 @@ export function createWorktreeRoutes(events: EventEmitter): Router {
   );
   router.post('/stop-dev', createStopDevHandler());
   router.post('/list-dev-servers', createListDevServersHandler());
+  router.get(
+    '/dev-server-logs',
+    validatePathParams('worktreePath'),
+    createGetDevServerLogsHandler()
+  );
 
   // Init script routes
   router.get('/init-script', createGetInitScriptHandler());

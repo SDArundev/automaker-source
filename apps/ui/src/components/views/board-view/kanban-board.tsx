@@ -8,7 +8,7 @@ import { Archive, Settings2, CheckSquare, GripVertical, Plus } from 'lucide-reac
 import { useResponsiveKanban } from '@/hooks/use-responsive-kanban';
 import { getColumnsWithPipeline, type ColumnId } from './constants';
 import type { PipelineConfig } from '@automaker/types';
-
+import { cn } from '@/lib/utils';
 interface KanbanBoardProps {
   sensors: any;
   collisionDetectionStrategy: (args: any) => any;
@@ -44,6 +44,8 @@ interface KanbanBoardProps {
   runningAutoTasks: string[];
   onArchiveAllVerified: () => void;
   onAddFeature: () => void;
+  onShowCompletedModal: () => void;
+  completedCount: number;
   pipelineConfig: PipelineConfig | null;
   onOpenPipelineSettings?: () => void;
   // Selection mode props
@@ -57,6 +59,8 @@ interface KanbanBoardProps {
   isDragging?: boolean;
   /** Whether the board is in read-only mode */
   isReadOnly?: boolean;
+  /** Additional className for custom styling (e.g., transition classes) */
+  className?: string;
 }
 
 export function KanbanBoard({
@@ -86,6 +90,8 @@ export function KanbanBoard({
   runningAutoTasks,
   onArchiveAllVerified,
   onAddFeature,
+  onShowCompletedModal,
+  completedCount,
   pipelineConfig,
   onOpenPipelineSettings,
   isSelectionMode = false,
@@ -95,6 +101,7 @@ export function KanbanBoard({
   onAiSuggest,
   isDragging = false,
   isReadOnly = false,
+  className,
 }: KanbanBoardProps) {
   // Generate columns including pipeline steps
   const columns = useMemo(() => getColumnsWithPipeline(pipelineConfig), [pipelineConfig]);
@@ -108,7 +115,14 @@ export function KanbanBoard({
   const { columnWidth, containerStyle } = useResponsiveKanban(columns.length);
 
   return (
-    <div className="flex-1 overflow-x-auto px-5 pt-4 pb-4 relative" style={backgroundImageStyle}>
+    <div
+      className={cn(
+        'flex-1 overflow-x-auto px-5 pt-4 pb-4 relative',
+        'transition-opacity duration-200',
+        className
+      )}
+      style={backgroundImageStyle}
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetectionStrategy}
@@ -130,17 +144,36 @@ export function KanbanBoard({
                 showBorder={backgroundSettings.columnBorderEnabled}
                 hideScrollbar={backgroundSettings.hideScrollbar}
                 headerAction={
-                  column.id === 'verified' && columnFeatures.length > 0 ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs"
-                      onClick={onArchiveAllVerified}
-                      data-testid="archive-all-verified-button"
-                    >
-                      <Archive className="w-3 h-3 mr-1" />
-                      Complete All
-                    </Button>
+                  column.id === 'verified' ? (
+                    <div className="flex items-center gap-1">
+                      {columnFeatures.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs"
+                          onClick={onArchiveAllVerified}
+                          data-testid="archive-all-verified-button"
+                        >
+                          <Archive className="w-3 h-3 mr-1" />
+                          Complete All
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 relative"
+                        onClick={onShowCompletedModal}
+                        title={`Completed Features (${completedCount})`}
+                        data-testid="completed-features-button"
+                      >
+                        <Archive className="w-3.5 h-3.5 text-muted-foreground" />
+                        {completedCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                            {completedCount > 99 ? '99+' : completedCount}
+                          </span>
+                        )}
+                      </Button>
+                    </div>
                   ) : column.id === 'backlog' ? (
                     <div className="flex items-center gap-1">
                       <Button

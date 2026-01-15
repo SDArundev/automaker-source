@@ -267,6 +267,7 @@ export function GraphViewPage() {
           setShowAddDialog(true);
         }}
         onDeleteTask={(feature) => handleDeleteFeature(feature.id)}
+        onAddFeature={() => setShowAddDialog(true)}
       />
 
       {/* Edit Feature Dialog */}

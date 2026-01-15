@@ -1,63 +1,36 @@
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ImageIcon, Archive } from 'lucide-react';
+import { ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BoardControlsProps {
   isMounted: boolean;
   onShowBoardBackground: () => void;
-  onShowCompletedModal: () => void;
-  completedCount: number;
 }
 
-export function BoardControls({
-  isMounted,
-  onShowBoardBackground,
-  onShowCompletedModal,
-  completedCount,
-}: BoardControlsProps) {
+export function BoardControls({ isMounted, onShowBoardBackground }: BoardControlsProps) {
   if (!isMounted) return null;
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-5">
         {/* Board Background Button */}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
+            <button
               onClick={onShowBoardBackground}
-              className="h-8 px-2"
+              className={cn(
+                'inline-flex h-8 items-center justify-center rounded-md px-2 text-sm font-medium transition-all duration-200 cursor-pointer',
+                'text-muted-foreground hover:text-foreground hover:bg-accent',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                'border border-border'
+              )}
               data-testid="board-background-button"
             >
               <ImageIcon className="w-4 h-4" />
-            </Button>
+            </button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Board Background Settings</p>
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Completed/Archived Features Button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onShowCompletedModal}
-              className="h-8 px-2 relative"
-              data-testid="completed-features-button"
-            >
-              <Archive className="w-4 h-4" />
-              {completedCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-brand-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {completedCount > 99 ? '99+' : completedCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Completed Features ({completedCount})</p>
           </TooltipContent>
         </Tooltip>
       </div>

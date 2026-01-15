@@ -660,14 +660,14 @@ export interface FileDiffResult {
 }
 
 export interface WorktreeAPI {
-  // Merge feature worktree changes back to main branch
+  // Merge worktree branch into main and clean up
   mergeFeature: (
     projectPath: string,
-    featureId: string,
+    branchName: string,
+    worktreePath: string,
     options?: {
       squash?: boolean;
-      commitMessage?: string;
-      squashMessage?: string;
+      message?: string;
     }
   ) => Promise<{
     success: boolean;
@@ -770,6 +770,13 @@ export interface WorktreeAPI {
     error?: string;
   }>;
 
+  // Generate an AI commit message from git diff
+  generateCommitMessage: (worktreePath: string) => Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+  }>;
+
   // Push a worktree branch to remote
   push: (
     worktreePath: string,
@@ -851,8 +858,11 @@ export interface WorktreeAPI {
     code?: 'NOT_GIT_REPO' | 'NO_COMMITS';
   }>;
 
-  // List all local branches
-  listBranches: (worktreePath: string) => Promise<{
+  // List branches (local and optionally remote)
+  listBranches: (
+    worktreePath: string,
+    includeRemote?: boolean
+  ) => Promise<{
     success: boolean;
     result?: {
       currentBranch: string;
@@ -977,6 +987,43 @@ export interface WorktreeAPI {
     };
     error?: string;
   }>;
+
+  // Get buffered logs for a dev server
+  getDevServerLogs: (worktreePath: string) => Promise<{
+    success: boolean;
+    result?: {
+      worktreePath: string;
+      port: number;
+      logs: string;
+      startedAt: string;
+    };
+    error?: string;
+  }>;
+
+  // Subscribe to dev server log events (started, output, stopped)
+  onDevServerLogEvent: (
+    callback: (
+      event:
+        | {
+            type: 'dev-server:started';
+            payload: { worktreePath: string; port: number; url: string; timestamp: string };
+          }
+        | {
+            type: 'dev-server:output';
+            payload: { worktreePath: string; content: string; timestamp: string };
+          }
+        | {
+            type: 'dev-server:stopped';
+            payload: {
+              worktreePath: string;
+              port: number;
+              exitCode: number | null;
+              error?: string;
+              timestamp: string;
+            };
+          }
+    ) => void
+  ) => () => void;
 
   // Get PR info and comments for a branch
   getPRInfo: (

@@ -22,6 +22,7 @@ interface GraphViewProps {
   onUpdateFeature?: (featureId: string, updates: Partial<Feature>) => void;
   onSpawnTask?: (feature: Feature) => void;
   onDeleteTask?: (feature: Feature) => void;
+  onAddFeature?: () => void;
 }
 
 export function GraphView({
@@ -40,6 +41,7 @@ export function GraphView({
   onUpdateFeature,
   onSpawnTask,
   onDeleteTask,
+  onAddFeature,
 }: GraphViewProps) {
   const { currentProject } = useAppStore();
 
@@ -212,6 +214,7 @@ export function GraphView({
         onNodeDoubleClick={handleNodeDoubleClick}
         nodeActionCallbacks={nodeActionCallbacks}
         onCreateDependency={handleCreateDependency}
+        onAddFeature={onAddFeature}
         backgroundStyle={backgroundImageStyle}
         backgroundSettings={backgroundSettings}
         className="h-full"

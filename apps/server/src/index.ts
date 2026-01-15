@@ -67,6 +67,7 @@ import { createPipelineRoutes } from './routes/pipeline/index.js';
 import { pipelineService } from './services/pipeline-service.js';
 import { createIdeationRoutes } from './routes/ideation/index.js';
 import { IdeationService } from './services/ideation-service.js';
+import { getDevServerService } from './services/dev-server-service.js';
 
 // Load environment variables
 dotenv.config();
@@ -176,6 +177,10 @@ const codexUsageService = new CodexUsageService(codexAppServerService);
 const mcpTestService = new MCPTestService(settingsService);
 const ideationService = new IdeationService(events, settingsService, featureLoader);
 
+// Initialize DevServerService with event emitter for real-time log streaming
+const devServerService = getDevServerService();
+devServerService.setEventEmitter(events);
+
 // Initialize services
 (async () => {
   await agentService.initialize();
@@ -217,7 +222,7 @@ app.use('/api/sessions', createSessionsRoutes(agentService));
 app.use('/api/features', createFeaturesRoutes(featureLoader));
 app.use('/api/auto-mode', createAutoModeRoutes(autoModeService));
 app.use('/api/enhance-prompt', createEnhancePromptRoutes(settingsService));
-app.use('/api/worktree', createWorktreeRoutes(events));
+app.use('/api/worktree', createWorktreeRoutes(events, settingsService));
 app.use('/api/git', createGitRoutes());
 app.use('/api/suggestions', createSuggestionsRoutes(events, settingsService));
 app.use('/api/models', createModelsRoutes());
