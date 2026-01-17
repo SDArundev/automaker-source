@@ -1,14 +1,6 @@
-/** GitHub PR states as returned by the GitHub API */
-export type PRState = 'OPEN' | 'MERGED' | 'CLOSED';
-
-export interface WorktreePRInfo {
-  number: number;
-  url: string;
-  title: string;
-  /** PR state: OPEN, MERGED, or CLOSED */
-  state: PRState;
-  createdAt: string;
-}
+// Re-export shared types from @automaker/types
+export type { PRState, WorktreePRInfo } from '@automaker/types';
+import type { PRState, WorktreePRInfo } from '@automaker/types';
 
 export interface WorktreeInfo {
   path: string;

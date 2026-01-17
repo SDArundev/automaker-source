@@ -13,6 +13,7 @@ import {
 } from '../common.js';
 import { updateWorktreePRInfo } from '../../../lib/worktree-metadata.js';
 import { createLogger } from '@automaker/utils';
+import { validatePRState } from '@automaker/types';
 
 const logger = createLogger('CreatePR');
 
@@ -273,7 +274,7 @@ export function createCreatePRHandler() {
               number: existingPr.number,
               url: existingPr.url,
               title: existingPr.title || title,
-              state: existingPr.state || 'OPEN',
+              state: validatePRState(existingPr.state),
               createdAt: new Date().toISOString(),
             });
             logger.debug(
@@ -359,7 +360,7 @@ export function createCreatePRHandler() {
                     number: existingPr.number,
                     url: existingPr.url,
                     title: existingPr.title || title,
-                    state: existingPr.state || 'OPEN',
+                    state: validatePRState(existingPr.state),
                     createdAt: new Date().toISOString(),
                   });
                   logger.debug(`Fetched and stored existing PR: #${existingPr.number}`);

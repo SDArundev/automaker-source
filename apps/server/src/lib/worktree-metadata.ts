@@ -5,21 +5,13 @@
 
 import * as secureFs from './secure-fs.js';
 import * as path from 'path';
+import type { PRState, WorktreePRInfo } from '@automaker/types';
+
+// Re-export types for backwards compatibility
+export type { PRState, WorktreePRInfo };
 
 /** Maximum length for sanitized branch names in filesystem paths */
 const MAX_SANITIZED_BRANCH_PATH_LENGTH = 200;
-
-/** GitHub PR states as returned by the GitHub API */
-export type PRState = 'OPEN' | 'MERGED' | 'CLOSED';
-
-export interface WorktreePRInfo {
-  number: number;
-  url: string;
-  title: string;
-  /** PR state: OPEN, MERGED, or CLOSED */
-  state: PRState;
-  createdAt: string;
-}
 
 export interface WorktreeMetadata {
   branch: string;

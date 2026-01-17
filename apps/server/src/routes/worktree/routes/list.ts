@@ -18,9 +18,9 @@ import {
   readAllWorktreeMetadata,
   updateWorktreePRInfo,
   type WorktreePRInfo,
-  type PRState,
 } from '../../../lib/worktree-metadata.js';
 import { createLogger } from '@automaker/utils';
+import { validatePRState } from '@automaker/types';
 import {
   checkGitHubRemote,
   type GitHubRemoteStatus,
@@ -221,7 +221,7 @@ async function fetchGitHubPRs(projectPath: string): Promise<Map<string, Worktree
         url: pr.url,
         title: pr.title,
         // GitHub CLI returns state as uppercase: OPEN, MERGED, CLOSED
-        state: pr.state as PRState,
+        state: validatePRState(pr.state),
         createdAt: pr.createdAt,
       });
     }
