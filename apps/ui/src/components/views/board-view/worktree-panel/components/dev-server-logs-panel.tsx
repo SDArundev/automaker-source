@@ -256,7 +256,6 @@ export function DevServerLogsPanel({
               ref={xtermRef}
               className="h-full"
               minHeight={280}
-              fontSize={13}
               autoScroll={autoScrollEnabled}
               onScrollAwayFromBottom={() => setAutoScrollEnabled(false)}
               onScrollToBottom={() => setAutoScrollEnabled(true)}
